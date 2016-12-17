@@ -19,7 +19,7 @@ package main
 
 import (
     "fmt"
-    mediainfo "github.com/zhulik/go_mediainfo"
+    mediainfo "github.com/jie123108/go_mediainfo"
     "os"
 )
 
@@ -39,7 +39,7 @@ package main
 
 import (
     "fmt"
-    mediainfo "github.com/zhulik/go_mediainfo"
+    mediainfo "github.com/jie123108/go_mediainfo"
     "os"
 )
 
