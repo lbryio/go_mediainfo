@@ -13,34 +13,83 @@ Documentation for libmediainfo is poor and ascetic, can be found [here](https://
 
 Your advices and suggestions are welcome!
 
-## Example
+## Simple Example
 ```go
 package main
 
 import (
-	"fmt"
-	"github.com/zhulik/go_mediainfo"
-	"io/ioutil"
-	"os"
+    "fmt"
+    mediainfo "github.com/zhulik/go_mediainfo"
+    "os"
 )
 
 func main() {
-	f, err := os.Open(os.Args[1])
-	if err != nil {
-		panic(err)
-	}
-	bytes, err := ioutil.ReadAll(f)
-	if err != nil {
-		panic(err)
-	}
+    info, err := mediainfo.GetMediaInfo(os.Args[1])
+    if err != nil {
+        fmt.Printf("open failed: %v\n", err)
+        os.Exit(1)
+    }
+    fmt.Printf("%v\n", info)
+}
+```
 
-	mi := mediainfo.NewMediaInfo()
-	err = mi.OpenMemory(bytes)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(mi.AvailableParameters()) // Print all supported params for Get
-	fmt.Println(mi.Get("BitRate")) // Print bitrate
+## Example 
+```go
+package main
+
+import (
+    "fmt"
+    mediainfo "github.com/zhulik/go_mediainfo"
+    "os"
+)
+
+func main() {
+    mi := mediainfo.NewMediaInfo()
+    err := mi.OpenFile(os.Args[1])
+    if err != nil {
+        fmt.Printf("open failed: %v\n", err)
+        os.Exit(1)
+    }
+    defer mi.Close()
+    video := &mediainfo.SimpleMediaInfo{}
+    g := &video.General
+    g.DurationStr = mi.Get(mediainfo.MediaInfo_Stream_General, "Duration/String3")
+    g.Duration = mi.GetInt(mediainfo.MediaInfo_Stream_General, "Duration")
+    g.Start = mi.GetInt(mediainfo.MediaInfo_Stream_General, "Start")
+    g.BitRate = mi.GetInt(mediainfo.MediaInfo_Stream_General, "OverallBitRate")
+    g.FrameRate = mi.GetInt(mediainfo.MediaInfo_Stream_General, "FrameRate")
+    g.FileSize = mi.GetInt(mediainfo.MediaInfo_Stream_General, "FileSize")
+
+    g.GeneralCount = int(mi.GetInt(mediainfo.MediaInfo_Stream_General, "GeneralCount"))
+    g.VideoCount = int(mi.GetInt(mediainfo.MediaInfo_Stream_General, "VideoCount"))
+    g.AudioCount = int(mi.GetInt(mediainfo.MediaInfo_Stream_General, "AudioCount"))
+    g.TextCount = int(mi.GetInt(mediainfo.MediaInfo_Stream_General, "TextCount"))
+    g.OtherCount = int(mi.GetInt(mediainfo.MediaInfo_Stream_General, "OtherCount"))
+    g.ImageCount = int(mi.GetInt(mediainfo.MediaInfo_Stream_General, "ImageCount"))
+    g.MenuCount = int(mi.GetInt(mediainfo.MediaInfo_Stream_General, "MenuCount"))
+
+    v := &video.Video
+    v.CodecID = mi.Get(mediainfo.MediaInfo_Stream_Video, "CodecID")
+    v.BitRate = mi.GetInt(mediainfo.MediaInfo_Stream_Video, "BitRate")
+    v.Width = mi.GetInt(mediainfo.MediaInfo_Stream_Video, "Width")
+    v.Height = mi.GetInt(mediainfo.MediaInfo_Stream_Video, "Height")
+    v.Resolution = fmt.Sprintf("%dx%d", v.Width, v.Height)
+    v.DAR = mi.Get(mediainfo.MediaInfo_Stream_Video, "DisplayAspectRatio/String")
+
+    a := &video.Audio
+    a.CodecID = mi.Get(mediainfo.MediaInfo_Stream_Audio, "CodecID")
+    a.SamplingRate = mi.GetInt(mediainfo.MediaInfo_Stream_Audio, "SamplingRate")
+    a.BitRate = mi.GetInt(mediainfo.MediaInfo_Stream_Audio, "BitRate")
+
+    video.SubtitlesCnt = int(mi.GetInt(mediainfo.MediaInfo_Stream_Text, "StreamCount"))
+    for i := 0; i < video.SubtitlesCnt; i++ {
+        Format := mi.GetIdx(mediainfo.MediaInfo_Stream_Text, i, "Format")
+        CodecID := mi.GetIdx(mediainfo.MediaInfo_Stream_Text, i, "CodecID")
+        Title := mi.GetIdx(mediainfo.MediaInfo_Stream_Text, i, "Title")
+        subtitles := mediainfo.SubtitlesInfo{Format: Format, CodecID: CodecID, Title: Title}
+        video.Subtitles = append(video.Subtitles, subtitles)
+    }
+    fmt.Printf("%v\n", video)
 }
 
 ```
