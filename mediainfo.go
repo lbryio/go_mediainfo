@@ -1,7 +1,8 @@
 package mediainfo
 
 // #cgo CFLAGS: -DUNICODE
-// #cgo LDFLAGS: -lz -lzen -lpthread -lstdc++ -lmediainfo -ldl
+// #cgo windows LDFLAGS:
+// #cgo linux LDFLAGS: -lz -lzen -lpthread -lstdc++ -lmediainfo -ldl
 // #include "go_mediainfo.h"
 import "C"
 
@@ -22,7 +23,7 @@ func init() {
 	C.MediaInfoDLL_Load()
 
 	if C.MediaInfoDLL_IsLoaded() == 0 {
-		panic("Cannot load mediainfo")
+		fmt.Println("Cannot load mediainfo")
 	}
 }
 
@@ -135,7 +136,7 @@ func (mi *MediaInfo) AvailableParameters() string {
 type GeneralInfo struct {
 	Codec       string //Codec
 	Format      string //Format
-	DurationStr string //Duration/String3          : Play time in format : HH:MM:SS.MMM
+	DurationStr string //Duration/String3 : Play time in format : HH:MM:SS.MMM
 	Duration    int64  //Duration Play time of the stream in ms
 	Start       int64  //Start
 	BitRate     int64  //OverallBitRate  Bit rate of all streams in bps
