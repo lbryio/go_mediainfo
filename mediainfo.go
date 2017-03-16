@@ -2,7 +2,7 @@ package mediainfo
 
 // #cgo CFLAGS: -DUNICODE
 // #cgo windows LDFLAGS:
-// #cgo linux LDFLAGS: -lz -lzen -lpthread -lstdc++ -ldl
+// #cgo linux LDFLAGS: -lz -lzen -lpthread -lstdc++ -lmediainfo -ldl
 // #include "go_mediainfo.h"
 import "C"
 
@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"strconv"
 	"unsafe"
+	"github.com/jie123108/glog"
 )
 
 // MediaInfo - represents MediaInfo class, all interaction with libmediainfo through it
@@ -102,6 +103,14 @@ func (mi *MediaInfo) GetIntIdx(stream_type int, stream_idx int, param string) (i
 	return
 }
 
+func (mi *MediaInfo) GetFloatIdx(stream_type int, stream_idx int, param string) (ivalue float64) {
+	result := mi.GetIdx(stream_type, stream_idx, param)
+	if result != "" {
+		ivalue, _ = strconv.ParseFloat(result, 64)
+	}
+	return
+}
+
 // GetInt - allow to read info as int from file
 func (mi *MediaInfo) GetInt(stream_type int, param string) (ivalue int64) {
 	ivalue = mi.GetIntIdx(stream_type, 0, param)
@@ -155,27 +164,35 @@ type GeneralInfo struct {
 type VideoInfo struct {
 	CodecID       string // CodecID
 	BitRate       int64  // Bit rate in bps
+	FrameRate	  float64//帧率
 	Resolution    string //WxH
 	Width, Height int64  //Width,Height
 	DAR           string //DisplayAspectRatio/String
+	Default		  string   //默认视频，只有一个
 }
 
 type AudioInfo struct {
-	CodecID      string //CodecID
-	SamplingRate int64  //SamplingRate
-	BitRate      int64  //BitRate: Bit rate in bps
+	CodecID      			string //CodecID
+	channel, SamplingRate 	int64  //channel SamplingRate
+	BitRate      			int64  //BitRate: Bit rate in bps
+	Title, Language			string //标题，语言
+	Default					string   //默认音频，只有一个
 }
 
 type SubtitlesInfo struct {
-	Format  string //Format UTF-8
-	CodecID string //CodecID S_TEXT/UTF8
-	Title   string //英文字幕
+	Format  	string //Format UTF-8
+	CodecID 	string //CodecID S_TEXT/UTF8
+	Title   	string //字幕标题，如：英文字幕
+	Language	string //语言
+	Default		string   //默认字幕，只有一个
 }
 
 type SimpleMediaInfo struct {
 	General      GeneralInfo
-	Video        VideoInfo
-	Audio        AudioInfo
+	//VideoCount	 int
+	Video        []VideoInfo
+	//AudioCount	 int
+	Audio        []AudioInfo
 	SubtitlesCnt int
 	Subtitles    []SubtitlesInfo
 }
@@ -207,26 +224,51 @@ func GetMediaInfo(filename string) (info *SimpleMediaInfo, err error) {
 	g.ImageCount = int(mi.GetInt(MediaInfo_Stream_General, "ImageCount"))
 	g.MenuCount = int(mi.GetInt(MediaInfo_Stream_General, "MenuCount"))
 
-	v := &info.Video
-	v.CodecID = mi.Get(MediaInfo_Stream_Video, "CodecID")
-	v.BitRate = mi.GetInt(MediaInfo_Stream_Video, "BitRate")
-	v.Width = mi.GetInt(MediaInfo_Stream_Video, "Width")
-	v.Height = mi.GetInt(MediaInfo_Stream_Video, "Height")
-	v.Resolution = fmt.Sprintf("%dx%d", v.Width, v.Height)
-	v.DAR = mi.Get(MediaInfo_Stream_Video, "DisplayAspectRatio/String")
 
-	a := &info.Audio
-	a.CodecID = mi.Get(MediaInfo_Stream_Audio, "CodecID")
-	a.SamplingRate = mi.GetInt(MediaInfo_Stream_Audio, "SamplingRate")
-	a.BitRate = mi.GetInt(MediaInfo_Stream_Audio, "BitRate")
+	//v := &info.Video
+	for i := 0; i < g.VideoCount; i++ {
+	vinfo := VideoInfo{}
+	vinfo.CodecID 	= mi.GetIdx(MediaInfo_Stream_Video, i, "CodecID")
+	vinfo.BitRate 	= mi.GetIntIdx(MediaInfo_Stream_Video, i, "BitRate")
+	vinfo.FrameRate = mi.GetFloatIdx(MediaInfo_Stream_Video, i, "FrameRate")
+	vinfo.Width 	= mi.GetIntIdx(MediaInfo_Stream_Video, i, "Width")
+	vinfo.Height 	= mi.GetIntIdx(MediaInfo_Stream_Video, i, "Height")
+	vinfo.Resolution = fmt.Sprintf("%dx%d", vinfo.Width, vinfo.Height)
+	vinfo.Default 	= mi.GetIdx(MediaInfo_Stream_Video, i, "Default")
+	vinfo.DAR 		= mi.GetIdx(MediaInfo_Stream_Video, i, "DisplayAspectRatio/String")
+	glog.Infof("GetMediaInfo vinfo.CodecID:%s, BitRate:%d, FrameRate:%f, Width:%d, Height:%d, Resolution:%s, Default:%s\n", vinfo.CodecID, vinfo.BitRate, vinfo.FrameRate, vinfo.Width, vinfo.Height, vinfo.Resolution, vinfo.Default)
+	info.Video 		= append(info.Video, vinfo)
+	}
+
+	//a := &info.Audio
+	for i := 0; i < g.AudioCount; i++ {
+	ainfo := AudioInfo{}
+	ainfo.CodecID = mi.GetIdx(MediaInfo_Stream_Audio, i, "CodecID")
+	ainfo.channel = mi.GetIntIdx(MediaInfo_Stream_Audio, i, "Channel")
+	ainfo.SamplingRate = mi.GetIntIdx(MediaInfo_Stream_Audio, i, "SamplingRate")
+	ainfo.BitRate = mi.GetIntIdx(MediaInfo_Stream_Audio, i, "BitRate")
+	ainfo.Title = mi.GetIdx(MediaInfo_Stream_Audio, i, "Title")
+	ainfo.Language = mi.GetIdx(MediaInfo_Stream_Audio, i, "Language")
+	ainfo.Default = mi.GetIdx(MediaInfo_Stream_Audio, i, "Default")
+	info.Audio = append(info.Audio, ainfo)
+
+	glog.Infof("GetMediaInfo ainfo.CodecID:%s, ainfo.channel:%d, ainfo.SamplingRate:%d, ainfo.BitRate:%d, ainfo.Title:%s, ainfo.Language:%s, ainfo.Default:%s\n", ainfo.CodecID, ainfo.channel, ainfo.SamplingRate, ainfo.BitRate, ainfo.Title, ainfo.Language, ainfo.Default)
+	}
 
 	info.SubtitlesCnt = int(mi.GetInt(MediaInfo_Stream_Text, "StreamCount"))
-	for i := 0; i < info.SubtitlesCnt; i++ {
-		Format := mi.GetIdx(MediaInfo_Stream_Text, i, "Format")
-		CodecID := mi.GetIdx(MediaInfo_Stream_Text, i, "CodecID")
-		Title := mi.GetIdx(MediaInfo_Stream_Text, i, "Title")
-		subtitles := SubtitlesInfo{Format: Format, CodecID: CodecID, Title: Title}
+	glog.Infof("GetMediaInfo info.SubtitlesCnt:%d, g.TextCount:%d\n", info.SubtitlesCnt, g.TextCount)
+	for i := 0; i < g.TextCount; i++ {
+		subtitles := SubtitlesInfo{}
+		subtitles.Format = mi.GetIdx(MediaInfo_Stream_Text, i, "Format")
+		subtitles.CodecID = mi.GetIdx(MediaInfo_Stream_Text, i, "CodecID")
+		subtitles.Title = mi.GetIdx(MediaInfo_Stream_Text, i, "Title")
+		subtitles.Language = mi.GetIdx(MediaInfo_Stream_Text, i, "Language")
+		subtitles.Default = mi.GetIdx(MediaInfo_Stream_Text, i, "Default")
+		//subtitles := SubtitlesInfo{Format: Format, CodecID: CodecID, Title: Title}
+		glog.Infof("GetMediaInfo subtitles.Format:%s, subtitles.CodecID:%s, subtitles.Title:%s, subtitles.Language:%s, subtitles.Default:%s\n", subtitles.Format, subtitles.CodecID, subtitles.Title, subtitles.Language, subtitles.Default)
 		info.Subtitles = append(info.Subtitles, subtitles)
+		//subtitles := SubtitlesInfo{Format: Format, CodecID: CodecID, Title: Title}
+		//info.Subtitles = append(info.Subtitles, subtitles)
 	}
 
 	return
