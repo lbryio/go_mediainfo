@@ -1,8 +1,9 @@
 package mediainfo
 
+// -lmediainfo 
 // #cgo CFLAGS: -DUNICODE
 // #cgo windows LDFLAGS:
-// #cgo linux LDFLAGS: -lz -lzen -lpthread -lstdc++ -lmediainfo -ldl
+// #cgo linux LDFLAGS: -lz -lpthread -lstdc++ -ldl
 // #include "go_mediainfo.h"
 import "C"
 
