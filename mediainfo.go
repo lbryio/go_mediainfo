@@ -1,6 +1,5 @@
 package mediainfo
 
-// -lmediainfo 
 // #cgo CFLAGS: -DUNICODE
 // #cgo windows LDFLAGS:
 // #cgo linux LDFLAGS: -lz -lpthread -lstdc++ -ldl
