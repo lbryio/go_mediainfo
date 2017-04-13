@@ -162,6 +162,7 @@ type GeneralInfo struct {
 }
 
 type VideoInfo struct {
+	StreamID 	  int64//stream id of this file
 	CodecID       string // CodecID
 	BitRate       int64  // Bit rate in bps
 	FrameRate	  float64//帧率
@@ -172,6 +173,7 @@ type VideoInfo struct {
 }
 
 type AudioInfo struct {
+	StreamID 				int64//stream id of this file
 	CodecID      			string //CodecID
 	channel, SamplingRate 	int64  //channel SamplingRate
 	BitRate      			int64  //BitRate: Bit rate in bps
@@ -180,6 +182,7 @@ type AudioInfo struct {
 }
 
 type SubtitlesInfo struct {
+	StreamID 	int64//stream id of this file
 	Format  	string //Format UTF-8
 	CodecID 	string //CodecID S_TEXT/UTF8
 	Title   	string //字幕标题，如：英文字幕
@@ -224,10 +227,17 @@ func GetMediaInfo(filename string) (info *SimpleMediaInfo, err error) {
 	g.ImageCount = int(mi.GetInt(MediaInfo_Stream_General, "ImageCount"))
 	g.MenuCount = int(mi.GetInt(MediaInfo_Stream_General, "MenuCount"))
 
-
+	var StreamIDOffSet int64
+	if "RealMedia" == g.Format {
+		StreamIDOffSet = 0
+	} else {
+		StreamIDOffSet = 1
+	}
+	glog.Infof("GetMediaInfo g.VideoCount:%d, g.AudioCount:%d, g.TextCount, StreamIDOffSet:%d\n", g.VideoCount, g.AudioCount, g.TextCount, StreamIDOffSet)
 	//v := &info.Video
 	for i := 0; i < g.VideoCount; i++ {
 	vinfo := VideoInfo{}
+	vinfo.StreamID  = mi.GetIntIdx(MediaInfo_Stream_Video, i, "ID") - StreamIDOffSet
 	vinfo.CodecID 	= mi.GetIdx(MediaInfo_Stream_Video, i, "CodecID")
 	vinfo.BitRate 	= mi.GetIntIdx(MediaInfo_Stream_Video, i, "BitRate")
 	vinfo.FrameRate = mi.GetFloatIdx(MediaInfo_Stream_Video, i, "FrameRate")
@@ -236,13 +246,14 @@ func GetMediaInfo(filename string) (info *SimpleMediaInfo, err error) {
 	vinfo.Resolution = fmt.Sprintf("%dx%d", vinfo.Width, vinfo.Height)
 	vinfo.Default 	= mi.GetIdx(MediaInfo_Stream_Video, i, "Default")
 	vinfo.DAR 		= mi.GetIdx(MediaInfo_Stream_Video, i, "DisplayAspectRatio/String")
-	glog.Infof("GetMediaInfo vinfo.CodecID:%s, BitRate:%d, FrameRate:%f, Width:%d, Height:%d, Resolution:%s, Default:%s\n", vinfo.CodecID, vinfo.BitRate, vinfo.FrameRate, vinfo.Width, vinfo.Height, vinfo.Resolution, vinfo.Default)
+	glog.Infof("GetMediaInfo vinfo.StreamID:%d vinfo.CodecID:%s, BitRate:%d, FrameRate:%f, Width:%d, Height:%d, Resolution:%s, Default:%s\n", vinfo.StreamID, vinfo.CodecID, vinfo.BitRate, vinfo.FrameRate, vinfo.Width, vinfo.Height, vinfo.Resolution, vinfo.Default)
 	info.Video 		= append(info.Video, vinfo)
 	}
 
 	//a := &info.Audio
 	for i := 0; i < g.AudioCount; i++ {
 	ainfo := AudioInfo{}
+	ainfo.StreamID  = mi.GetIntIdx(MediaInfo_Stream_Audio, i, "ID") - StreamIDOffSet
 	ainfo.CodecID = mi.GetIdx(MediaInfo_Stream_Audio, i, "CodecID")
 	ainfo.channel = mi.GetIntIdx(MediaInfo_Stream_Audio, i, "Channel")
 	ainfo.SamplingRate = mi.GetIntIdx(MediaInfo_Stream_Audio, i, "SamplingRate")
@@ -252,20 +263,21 @@ func GetMediaInfo(filename string) (info *SimpleMediaInfo, err error) {
 	ainfo.Default = mi.GetIdx(MediaInfo_Stream_Audio, i, "Default")
 	info.Audio = append(info.Audio, ainfo)
 
-	glog.Infof("GetMediaInfo ainfo.CodecID:%s, ainfo.channel:%d, ainfo.SamplingRate:%d, ainfo.BitRate:%d, ainfo.Title:%s, ainfo.Language:%s, ainfo.Default:%s\n", ainfo.CodecID, ainfo.channel, ainfo.SamplingRate, ainfo.BitRate, ainfo.Title, ainfo.Language, ainfo.Default)
+	glog.Infof("GetMediaInfo ainfo.StreamID:%d, ainfo.CodecID:%s, ainfo.channel:%d, ainfo.SamplingRate:%d, ainfo.BitRate:%d, ainfo.Title:%s, ainfo.Language:%s, ainfo.Default:%s\n", ainfo.StreamID, ainfo.CodecID, ainfo.channel, ainfo.SamplingRate, ainfo.BitRate, ainfo.Title, ainfo.Language, ainfo.Default)
 	}
 
 	info.SubtitlesCnt = int(mi.GetInt(MediaInfo_Stream_Text, "StreamCount"))
 	glog.Infof("GetMediaInfo info.SubtitlesCnt:%d, g.TextCount:%d\n", info.SubtitlesCnt, g.TextCount)
 	for i := 0; i < g.TextCount; i++ {
 		subtitles := SubtitlesInfo{}
+		subtitles.StreamID  = mi.GetIntIdx(MediaInfo_Stream_Text, i, "ID") - StreamIDOffSet
 		subtitles.Format = mi.GetIdx(MediaInfo_Stream_Text, i, "Format")
 		subtitles.CodecID = mi.GetIdx(MediaInfo_Stream_Text, i, "CodecID")
 		subtitles.Title = mi.GetIdx(MediaInfo_Stream_Text, i, "Title")
 		subtitles.Language = mi.GetIdx(MediaInfo_Stream_Text, i, "Language")
 		subtitles.Default = mi.GetIdx(MediaInfo_Stream_Text, i, "Default")
 		//subtitles := SubtitlesInfo{Format: Format, CodecID: CodecID, Title: Title}
-		glog.Infof("GetMediaInfo subtitles.Format:%s, subtitles.CodecID:%s, subtitles.Title:%s, subtitles.Language:%s, subtitles.Default:%s\n", subtitles.Format, subtitles.CodecID, subtitles.Title, subtitles.Language, subtitles.Default)
+		glog.Infof("GetMediaInfo subtitles.StreamID:%d, subtitles.Format:%s, subtitles.CodecID:%s, subtitles.Title:%s, subtitles.Language:%s, subtitles.Default:%s\n", subtitles.StreamID, subtitles.Format, subtitles.CodecID, subtitles.Title, subtitles.Language, subtitles.Default)
 		info.Subtitles = append(info.Subtitles, subtitles)
 		//subtitles := SubtitlesInfo{Format: Format, CodecID: CodecID, Title: Title}
 		//info.Subtitles = append(info.Subtitles, subtitles)
