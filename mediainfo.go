@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"strconv"
 	"unsafe"
+	"strings"
 	"github.com/jie123108/glog"
 )
 
@@ -96,11 +97,16 @@ func (mi *MediaInfo) Get(stream_type int, param string) (result string) {
 
 // GetIntIdx - allow to read info as int from file
 func (mi *MediaInfo) GetIntIdx(stream_type int, stream_idx int, param string) (ivalue int64) {
-	result := mi.GetIdx(stream_type, stream_idx, param)
-	if result != "" {
-		ivalue, _ = strconv.ParseInt(result, 10, 64)
-	}
-	return
+  result := mi.GetIdx(stream_type, stream_idx, param)
+  if result != "" {
+    var err error
+    tmp := strings.Split(result, ".")
+    ivalue, err = strconv.ParseInt(tmp[0], 10, 64)
+    if err != nil {
+      glog.Errorf("GetIntIdx ParseInt error:%s", err.Error())
+    }
+  }
+  return
 }
 
 func (mi *MediaInfo) GetFloatIdx(stream_type int, stream_idx int, param string) (ivalue float64) {
