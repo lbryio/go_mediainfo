@@ -1,7 +1,7 @@
 package mediainfo
 
 // #cgo CFLAGS: -DUNICODE
-// #cgo LDFLAGS: -lz -lzen -lpthread -lstdc++ -lmediainfo -ldl
+// #cgo LDFLAGS: -framework CoreFoundation -lz -lzen -lpthread -lstdc++ -lmediainfo -ldl
 // #include "go_mediainfo.h"
 import "C"
 
