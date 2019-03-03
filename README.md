@@ -95,6 +95,7 @@ func main() {
 ```
 
 ## Output Format
+```
 General
 Count                     : Count of objects available in this stream
 StreamCount               : Count of streams of that kind available
@@ -741,6 +742,7 @@ Language/String           : Language (full)
 Language_More             : More info about Language (director's comment...)
 List                      : List of programs available
 List/String
+```
 
 Read the [documentation](https://godoc.org/github.com/zhulik/go_mediainfo) for other functions
 
