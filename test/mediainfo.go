@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	mediainfo "github.com/zhulik/go_mediainfo"
+	mediainfo "github.com/lbryio/go_mediainfo"
 	"os"
 )
 
